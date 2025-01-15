@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaflet Map Example</title>
+    <title>Leaflet Map with Manageable Key Points</title>
     <!-- Include Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <style>
@@ -12,10 +12,51 @@
             height: 500px;
             width: 100%;
         }
+
+        /* Key Point Control styling */
+        .keypoint-control {
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .keypoint-control h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .keypoint-control ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .keypoint-control ul li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .keypoint-control ul li span {
+            cursor: pointer;
+        }
+
+        .keypoint-control ul li span:hover {
+            text-decoration: underline;
+        }
+
+        .keypoint-control ul li button {
+            margin-left: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h1>Basic Leaflet Map</h1>
+    <h1>Leaflet Map with Manageable Key Points</h1>
+    <!-- Button to enable Key Point Mode -->
+    <button id="enable-keypoint-mode">Enable Key Point Mode</button>
+
     <!-- Map container -->
     <div id="map"></div>
 
@@ -23,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
         // Initialize the map
-        const map = L.map('map').setView([51.505, -0.09], 13); // Latitude, Longitude, Zoom level
+        const map = L.map('map').setView([51.505, -0.09], 13);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,9 +73,78 @@
 
         // Add a marker
         const marker = L.marker([51.505, -0.09]).addTo(map);
+        marker.bindPopup('<b>Lets Begin</b>').openPopup();
 
-        // Add a popup to the marker
-        marker.bindPopup('<b>Lets Begin').openPopup();
+        // Array to store key points
+        const keyPoints = [];
+
+        // Key Point Mode toggle
+        let isKeyPointModeEnabled = false;
+
+        // Enable Key Point Mode button
+        document.getElementById('enable-keypoint-mode').addEventListener('click', () => {
+            isKeyPointModeEnabled = true;
+            alert('Click on the map to add a new Key Point.');
+        });
+
+        // Custom Control for the Key Point Menu
+        const KeyPointControl = L.Control.extend({
+            onAdd: function(map) {
+                const container = L.DomUtil.create('div', 'keypoint-control');
+                container.innerHTML = '<h4>Key Points</h4><ul id="keypoint-list"></ul>';
+                return container;
+            }
+        });
+
+        // Add the custom control to the map
+        const keyPointControl = new KeyPointControl({ position: 'topright' });
+        map.addControl(keyPointControl);
+
+        // Helper function to add a new key point
+        function addKeyPoint(latlng) {
+            const name = prompt('Enter a name for this key point:');
+            if (!name) return; // Exit if no name is provided
+
+            const marker = L.marker(latlng).addTo(map).bindPopup(`<b>${name}</b>`);
+            keyPoints.push({ name, latlng, marker });
+
+            updateKeyPointMenu();
+        }
+
+        // Helper function to update the Key Point Menu
+        function updateKeyPointMenu() {
+            const list = document.getElementById('keypoint-list');
+            list.innerHTML = ''; // Clear the menu
+
+            keyPoints.forEach((keyPoint, index) => {
+                const listItem = document.createElement('li');
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = keyPoint.name;
+                nameSpan.addEventListener('click', () => {
+                    map.setView(keyPoint.latlng, 16); // Snap to the key point
+                });
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => {
+                    map.removeLayer(keyPoint.marker); // Remove marker from map
+                    keyPoints.splice(index, 1); // Remove key point from array
+                    updateKeyPointMenu(); // Update the menu
+                });
+
+                listItem.appendChild(nameSpan);
+                listItem.appendChild(deleteButton);
+                list.appendChild(listItem);
+            });
+        }
+
+        // Add a click event listener to the map
+        map.on('click', (e) => {
+            if (isKeyPointModeEnabled) {
+                addKeyPoint(e.latlng);
+                isKeyPointModeEnabled = false; // Disable Key Point Mode after adding
+            }
+        });
     </script>
 </body>
 </html>
