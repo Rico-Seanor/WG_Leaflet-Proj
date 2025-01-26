@@ -13,52 +13,87 @@
             width: 100%;
         }
 
-        /* Key Point Control styling */
-        .keypoint-control {
+        /* Styling for the custom controls */
+        .custom-control {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
             background: white;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            z-index: 1000;
         }
 
-        .keypoint-control h4 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
+        /* Modal styling */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
         }
 
-        .keypoint-control ul {
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .modal-content ul {
             list-style: none;
             padding: 0;
         }
 
-        .keypoint-control ul li {
+        .modal-content ul li {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
-        .keypoint-control ul li span {
-            cursor: pointer;
-        }
-
-        .keypoint-control ul li span:hover {
-            text-decoration: underline;
-        }
-
-        .keypoint-control ul li button {
+        .modal-content ul li button {
             margin-left: 10px;
-            cursor: pointer;
+            padding: 2px 5px;
         }
     </style>
 </head>
 <body>
     <h1>Leaflet Map with Manageable Key Points</h1>
-    <!-- Button to enable Key Point Mode -->
-    <button id="enable-keypoint-mode">Enable Key Point Mode</button>
 
     <!-- Map container -->
     <div id="map"></div>
+
+    <!-- Key Points Modal -->
+    <div id="keypoints-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeKeyPointsModal()">&times;</span>
+            <h4>Key Points</h4>
+            <ul id="keypoints-list"></ul>
+        </div>
+    </div>
 
     <!-- Include Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -71,77 +106,94 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Add a marker
-        const marker = L.marker([51.505, -0.09]).addTo(map);
-        marker.bindPopup('<b>Lets Begin</b>').openPopup();
-
         // Array to store key points
         const keyPoints = [];
 
         // Key Point Mode toggle
         let isKeyPointModeEnabled = false;
 
-        // Enable Key Point Mode button
-        document.getElementById('enable-keypoint-mode').addEventListener('click', () => {
-            isKeyPointModeEnabled = true;
-            alert('Click on the map to add a new Key Point.');
-        });
+        // Add custom control for the buttons
+        const customControl = L.control({ position: 'bottomright' });
 
-        // Custom Control for the Key Point Menu
-        const KeyPointControl = L.Control.extend({
-            onAdd: function(map) {
-                const container = L.DomUtil.create('div', 'keypoint-control');
-                container.innerHTML = '<h4>Key Points</h4><ul id="keypoint-list"></ul>';
-                return container;
-            }
-        });
+        customControl.onAdd = function(map) {
+            const container = L.DomUtil.create('div', 'custom-control');
+            container.style.cursor = 'pointer';
+            L.DomEvent.disableClickPropagation(container);
 
-        // Add the custom control to the map
-        const keyPointControl = new KeyPointControl({ position: 'topright' });
-        map.addControl(keyPointControl);
+            // Enable Key Point Mode button
+            const enableButton = document.createElement('button');
+            enableButton.textContent = 'Enable Key Point Mode';
+            enableButton.addEventListener('click', () => {
+                isKeyPointModeEnabled = true;
+                alert('Click on the map to place your Key Point.');
+            });
 
-        // Helper function to add a new key point
+            // View Key Points button
+            const pointsButton = document.createElement('button');
+            pointsButton.textContent = 'View Key Points';
+            pointsButton.addEventListener('click', openKeyPointsModal);
+
+            container.appendChild(enableButton);
+            container.appendChild(pointsButton);
+
+            return container;
+        };
+
+        customControl.addTo(map);
+
+        // Function to add a new key point
         function addKeyPoint(latlng) {
+            const currentZoom = map.getZoom(); // Save the current zoom level
             const name = prompt('Enter a name for this key point:');
             if (!name) return; // Exit if no name is provided
 
             const marker = L.marker(latlng).addTo(map).bindPopup(`<b>${name}</b>`);
-            keyPoints.push({ name, latlng, marker });
-
-            updateKeyPointMenu();
+            keyPoints.push({ name, latlng, marker, zoom: currentZoom }); // Save zoom level
         }
 
-        // Helper function to update the Key Point Menu
-        function updateKeyPointMenu() {
-            const list = document.getElementById('keypoint-list');
-            list.innerHTML = ''; // Clear the menu
+        // Function to open the Key Points modal
+        function openKeyPointsModal() {
+            const modal = document.getElementById('keypoints-modal');
+            const modalList = document.getElementById('keypoints-list');
+            modalList.innerHTML = ''; // Clear existing list
 
             keyPoints.forEach((keyPoint, index) => {
                 const listItem = document.createElement('li');
+
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = keyPoint.name;
+                nameSpan.style.cursor = 'pointer';
                 nameSpan.addEventListener('click', () => {
-                    map.setView(keyPoint.latlng, 16); // Snap to the key point
+                    map.setView(keyPoint.latlng, keyPoint.zoom); // Focus on the point and restore the zoom level
+                    closeKeyPointsModal(); // Close the modal after focusing on the point
                 });
 
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
                 deleteButton.addEventListener('click', () => {
                     map.removeLayer(keyPoint.marker); // Remove marker from map
-                    keyPoints.splice(index, 1); // Remove key point from array
-                    updateKeyPointMenu(); // Update the menu
+                    keyPoints.splice(index, 1); // Remove from array
+                    openKeyPointsModal(); // Refresh the modal
                 });
 
                 listItem.appendChild(nameSpan);
                 listItem.appendChild(deleteButton);
-                list.appendChild(listItem);
+                modalList.appendChild(listItem);
             });
+
+            modal.style.display = 'block'; // Show the modal
         }
 
-        // Add a click event listener to the map
+        // Function to close the Key Points modal
+        function closeKeyPointsModal() {
+            const modal = document.getElementById('keypoints-modal');
+            modal.style.display = 'none';
+        }
+
+        // Map click event to add key points
         map.on('click', (e) => {
             if (isKeyPointModeEnabled) {
-                addKeyPoint(e.latlng);
+                addKeyPoint(e.latlng); // Add key point after clicking
                 isKeyPointModeEnabled = false; // Disable Key Point Mode after adding
             }
         });
