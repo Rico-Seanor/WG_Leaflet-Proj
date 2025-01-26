@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Testing it out...</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <style>
@@ -16,8 +16,95 @@
     var map = L.map('map').setView([0, 0], 1);
 
     L.tileLayer('https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=6nFKolMxU6sDmSwzv4PN', { attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+    
+     
     }).addTo(map);
-    var marker = L.marker([51.5, -0.09]).addTo(map);
+
+
+ // Example dataset linked to markers
+var unitData = [
+{
+    id: 1,
+    name: "Unit Alpha",
+    details: "Unit Alpha is responsible for logistics and supplies.<br><br>Commander: Lt Col Smith<br>Prsnl Assigned: 45<br>Prsnl Available: 32",
+    coords: [45.505, -0.09]
+},
+{
+    id: 2,
+    name: "Unit Bravo",
+    details: "Unit Bravo handles communication and operations.<br><br>Commander: Maj Johnston<br>Prsnl Assigned: 45<br>Prsnl Available: 30",
+    coords: [51.51, 10.1]
+},
+{
+    id: 3,
+    name: "Unit Charlie",
+    details: "Unit Charlie specializes in field reconnaissance.<br><br>Commander: Lt Col Bridges<br>Prsnl Assigned: 10<br>Prsnl Available: 10",
+    coords: [51.51, -0.08]
+}
+];
+
+// Define custom icons for each unit
+var customIcons = {
+1: L.icon({
+    iconUrl: '/icons/red-a.png',
+    iconSize: [25, 25],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34]
+}),
+2: L.icon({
+    iconUrl: '/icons/green-b.png',
+    iconSize: [25, 25],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34]
+}),
+3: L.icon({
+    iconUrl: '/icons/blue-c.png',
+    iconSize: [25, 25],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34]
+})
+};
+
+// Add markers to the map and attach popups
+unitData.forEach(function(unit) {
+var marker = L.marker(unit.coords, { icon: customIcons[unit.id] }).addTo(map);
+marker.bindPopup(`<strong>${unit.name}</strong><br>${unit.details}`);
+
+// Store unit data on the marker for reference
+marker.unitInfo = unit;
+});
+
+// Create an Info Button Control
+var InfoButtonControl = L.Control.extend({
+options: {
+    position: 'topright' // Position of the button
+},
+
+onAdd: function() {
+    // Create a container for the button
+    var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+    // Style the button
+    container.style.backgroundColor = 'white';
+    container.style.width = '30px';
+    container.style.height = '30px';
+    container.style.textAlign = 'center';
+    container.style.cursor = 'pointer';
+    container.innerHTML = 'ℹ️';
+
+    // Handle button click
+    container.onclick = function() {
+        alert('Click a marker to view unit details.');
+    };
+
+    return container;
+}
+});
+
+// Add the custom control to the map
+map.addControl(new InfoButtonControl());
+
+
   </script>
   
 </body>
