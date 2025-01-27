@@ -198,5 +198,174 @@
             }
         });
     </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+
+<script>
+    // Array to store markers
+    const markers = [];
+
+    // Function to handle file selection and parse the Excel file
+    function importExcelFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx';
+        input.addEventListener('change', handleFile);
+        input.click();
+    }
+
+    // Function to process the selected file
+    function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0]; // Use the first sheet
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { raw: true });
+            processExcelData(json);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Function to process Excel data and place markers on the map
+    function processExcelData(data) {
+        data.forEach(row => {
+            const lat = parseFloat(row.Latitude); // Replace with the actual column name for latitude
+            const lng = parseFloat(row.Longitude); // Replace with the actual column name for longitude
+            const name = row["Unit Name"] || "Unnamed Unit" ; // name for the name
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const marker = L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`);
+                markers.push(marker);
+            }
+        });
+        alert(`${data.length} units added to the map.`);
+    }
+
+    // Example integration for triggering the file import
+    const importButton = document.createElement('button');
+    importButton.textContent = 'Import Units from Excel';
+    importButton.style.margin = '10px';
+    importButton.onclick = importExcelFile;
+
+    // Add the button to the map container or document
+    document.body.appendChild(importButton);
+</script>
+
+
+<script>
+// Example unit data (you can replace this with data from your Excel file)
+const unitData = [
+    {
+        id: 1,
+        name: "Unit Alpha",
+        details: "Unit Alpha is responsible for logistics and supplies.<br><br>Commander: Lt Col Smith<br>Prsnl Assigned: 45<br>Prsnl Available: 32",
+        coords: [45.505, -0.09]
+    },
+    {
+        id: 2,
+        name: "Unit Bravo",
+        details: "Unit Bravo handles communication and operations.<br><br>Commander: Maj Johnston<br>Prsnl Assigned: 45<br>Prsnl Available: 30",
+        coords: [51.51, 10.1]
+    },
+    {
+        id: 3,
+        name: "Unit Charlie",
+        details: "Unit Charlie specializes in field reconnaissance.<br><br>Commander: Lt Col Bridges<br>Prsnl Assigned: 10<br>Prsnl Available: 10",
+        coords: [51.51, -0.08]
+    }
+];
+
+// Define custom icons for each unit
+const customIcons = {
+    1: L.icon({
+        iconUrl: '/icons/red-a.png',
+        iconSize: [25, 25],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34]
+    }),
+    2: L.icon({
+        iconUrl: '/icons/green-b.png',
+        iconSize: [25, 25],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34]
+    }),
+    3: L.icon({
+        iconUrl: '/icons/blue-c.png',
+        iconSize: [25, 25],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34]
+    })
+};
+
+// Add markers to the map using unit data
+unitData.forEach(unit => {
+    const marker = L.marker(unit.coords, { icon: customIcons[unit.id] || customIcons[1] }).addTo(map);
+    marker.bindPopup(`<strong>${unit.name}</strong><br>${unit.details}`);
+
+    // Optional: Store unit data on the marker for further use
+    marker.unitInfo = unit;
+});
+
+
+
+
+// Create an Info Button Control
+const InfoButtonControl = L.Control.extend({
+    options: {
+        position: 'topright' // Position of the button
+    },
+
+    onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+        container.style.backgroundColor = 'white';
+        container.style.width = '30px';
+        container.style.height = '30px';
+        container.style.textAlign = 'center';
+        container.style.cursor = 'pointer';
+        container.innerHTML = 'ℹ️';
+
+        container.onclick = function() {
+            alert('Click a marker to view unit details.');
+        };
+
+        return container;
+    }
+});
+
+// Add the custom control to the map
+map.addControl(new InfoButtonControl());
+
+
+function processExcelData(data) {
+    data.forEach(row => {
+        const lat = parseFloat(row.Latitude);
+        const lng = parseFloat(row.Longitude);
+        const id = parseInt(row.ID);
+        const name = row["Unit Name"] || "Unnamed Unit";
+        const details = row["Unit Type"] || "No details provided.";
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            const icon = customIcons[id] || customIcons[1];
+            const marker = L.marker([lat, lng], { icon }).addTo(map);
+            marker.bindPopup(`<strong>${name}</strong><br>${details}`);
+        } else {
+            console.error("Invalid Latitude/Longitude in row:", row);
+        }
+    });
+    alert("Units imported successfully!");
+}
+
+    
+</script>
+
+
+
+
 </body>
 </html>
