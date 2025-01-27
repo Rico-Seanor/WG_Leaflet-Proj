@@ -122,10 +122,10 @@
 
             // Enable Key Point Mode button
             const enableButton = document.createElement('button');
-            enableButton.textContent = 'Enable Key Point Mode';
+            enableButton.textContent = 'Make a Key Point';
             enableButton.addEventListener('click', () => {
                 isKeyPointModeEnabled = true;
-                alert('Click on the map to place your Key Point.');
+                alert('Click on the map to place your Key Point, NOTE: your zoom level will be saved.');
             });
 
             // View Key Points button
@@ -349,11 +349,13 @@ function processExcelData(data) {
         const id = parseInt(row.ID);
         const name = row["Unit Name"] || "Unnamed Unit";
         const details = row["Unit Type"] || "No details provided.";
+        const equipment = row["Equipment"] || "No details provided.";
+        const size = row["Unit Size"] || "No details provided.";
 
         if (!isNaN(lat) && !isNaN(lng)) {
             const icon = customIcons[id] || customIcons[1];
             const marker = L.marker([lat, lng], { icon }).addTo(map);
-            marker.bindPopup(`<strong>${name}</strong><br>${details}`);
+            marker.bindPopup(`<strong>${name}</strong><br>${details}<br>${equipment}<br>${size}`);
         } else {
             console.error("Invalid Latitude/Longitude in row:", row);
         }
